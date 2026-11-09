@@ -31,6 +31,10 @@ export default function CardMaker({ locale }: { locale: Locale }) {
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
+  // 완성된 카드 파일을 미리 만들어 둬요. 휴대폰(특히 아이폰)은 버튼을 누른 "바로 그 순간"에
+  // 공유를 시작해야 해서, 누른 뒤에 파일을 만들면 공유창이 막혀요.
+  const blobRef = useRef<Blob | null>(null);
+  const [imgUrl, setImgUrl] = useState("");
   const font = cfg.fonts.find((f) => f.id === fontId) ?? cfg.fonts[0];
 
   useEffect(() => {
@@ -55,6 +59,19 @@ export default function CardMaker({ locale }: { locale: Locale }) {
       height: cardSize === "portrait" ? 1536 : 1024,
       frame: cfg.frame,
       seed,
+    });
+    const blob = await new Promise<Blob | null>((resolve) => {
+      const c = canvasRef.current;
+      if (!c) return resolve(null);
+      c.toBlob(resolve, "image/jpeg", 0.92);
+    });
+    if (!blob) return;
+    blobRef.current = blob;
+    // 화면에는 <img>로 보여줘요 → 휴대폰에서 길게 눌러 저장도 가능
+    const url = URL.createObjectURL(blob);
+    setImgUrl((old) => {
+      if (old) URL.revokeObjectURL(old);
+      return url;
     });
   }, [hasCard, bg, palette, text, font, style, placement, cardSize, cfg.frame, seed]);
 
@@ -115,18 +132,16 @@ export default function CardMaker({ locale }: { locale: Locale }) {
     }
   }
 
-  function toBlob(): Promise<Blob | null> {
-    return new Promise((r) => canvasRef.current?.toBlob(r, "image/jpeg", 0.92) ?? r(null));
-  }
-
   function fileName() {
     const d = new Date();
-    const stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}-${d.getHours()}${d.getMinutes()}`;
-    return `${locale === "ko" ? "인사카드" : "greeting-card"}-${stamp}.jpg`;
+    const p = (n: number) => String(n).padStart(2, "0");
+    const stamp = `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+    // 일부 안드로이드 브라우저가 한글 파일명을 깨뜨려서 영어로
+    return `morning-card-${stamp}.jpg`;
   }
 
-  async function download() {
-    const blob = await toBlob();
+  function download() {
+    const blob = blobRef.current;
     if (!blob) return;
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -135,22 +150,23 @@ export default function CardMaker({ locale }: { locale: Locale }) {
     document.body.appendChild(a);
     a.click();
     a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
   }
 
-  async function share() {
-    const blob = await toBlob();
+  // 주의: 이 함수 안에서 navigator.share 전에 await를 하면 안 돼요 (아이폰에서 공유창이 막힘)
+  function share() {
+    const blob = blobRef.current;
     if (!blob) return;
     const file = new File([blob], fileName(), { type: "image/jpeg" });
     // 휴대폰에서는 공유 창이 떠서 카카오톡/문자/페이스북을 고를 수 있어요
-    if (navigator.canShare?.({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file] });
-      } catch {
-        /* 사용자가 취소 */
-      }
+    if (typeof navigator.share === "function" && navigator.canShare?.({ files: [file] })) {
+      navigator.share({ files: [file] }).catch((e: unknown) => {
+        if (e instanceof Error && e.name === "AbortError") return; // 사용자가 취소
+        download();
+        alert(t.shareFallback);
+      });
     } else {
-      await download();
+      download();
       alert(t.shareFallback);
     }
   }
@@ -239,9 +255,11 @@ export default function CardMaker({ locale }: { locale: Locale }) {
                 <p>{t.making}</p>
               </div>
             )}
-            <canvas ref={canvasRef} className={hasCard ? "show" : ""} />
+            <canvas ref={canvasRef} hidden />
+            {hasCard && imgUrl && <img className="card-img" src={imgUrl} alt={text} />}
           </div>
           {demo && hasCard && <p className="demo">{t.demo}</p>}
+          {hasCard && <p className="hint">{t.longPress}</p>}
           {hasCard && (
             <div className="actions">
               <button className="primary big" onClick={share}>{t.share}</button>
