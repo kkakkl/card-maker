@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { analyzeByKeywords, analyzeWithAI, type Analysis } from "@/lib/analyze";
 import { buildPrompt, generateImage } from "@/lib/generate";
+import { rollIngredients } from "@/lib/motifs";
 import type { Locale } from "@/lib/locales";
 
 export const runtime = "nodejs";
@@ -23,7 +24,7 @@ function overLimit(ip: string) {
 }
 
 export async function POST(req: Request) {
-  let body: { text?: string; locale?: Locale; size?: "portrait" | "square"; code?: string; variation?: number };
+  let body: { text?: string; locale?: Locale; size?: "portrait" | "square"; code?: string; avoid?: string };
   try {
     body = await req.json();
   } catch {
@@ -41,17 +42,22 @@ export async function POST(req: Request) {
 
   const apiKey = process.env.OPENAI_API_KEY;
 
+  // 0) 이번 카드의 무작위 재료 (소재 후보, 빛, 구도, 장식)
+  const ing = rollIngredients(locale);
+  // "다른 그림으로 다시"일 때 직전 장면과 겹치지 않게
+  const avoid = typeof body.avoid === "string" ? body.avoid.slice(0, 300) : "";
+
   // 1) 글 분석
   let analysis: Analysis;
   if (apiKey) {
     try {
-      analysis = await analyzeWithAI(text, locale, apiKey);
+      analysis = await analyzeWithAI(text, locale, apiKey, ing, avoid);
     } catch (e) {
       console.error(e);
-      analysis = analyzeByKeywords(text, locale);
+      analysis = analyzeByKeywords(text, locale, ing);
     }
   } else {
-    analysis = analyzeByKeywords(text, locale);
+    analysis = analyzeByKeywords(text, locale, ing);
   }
 
   // 키가 없으면 체험 모드: 브라우저가 간단한 배경을 그려요
@@ -60,9 +66,8 @@ export async function POST(req: Request) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
   if (overLimit(ip)) return NextResponse.json({ error: "limit", analysis }, { status: 429 });
 
-  // 2) 그림 생성 ("다시 그리기"면 살짝 변주를 줘요)
-  let prompt = buildPrompt(locale, analysis);
-  if (body.variation) prompt += `\nVariation #${body.variation}: choose a different composition and camera angle than usual.`;
+  // 2) 그림 생성
+  const prompt = buildPrompt(locale, analysis, ing);
   try {
     const image = await generateImage(prompt, size, apiKey);
     return NextResponse.json({ image, analysis });

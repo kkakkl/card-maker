@@ -4,6 +4,7 @@
 
 import { BASE_IMAGE_STYLE, LOCALES, type Locale } from "./locales";
 import type { Analysis } from "./analyze";
+import type { Ingredients } from "./motifs";
 
 const CALM_AREA: Record<Analysis["placement"], string> = {
   top: "Keep the upper third of the image softer and less busy (sky, glow or blurred background) so lettering can be placed there; main subjects in the lower two thirds.",
@@ -11,11 +12,13 @@ const CALM_AREA: Record<Analysis["placement"], string> = {
   bottom: "Keep the lower third softer and less busy so lettering can be placed there; main subjects in the upper two thirds.",
 };
 
-export function buildPrompt(locale: Locale, a: Analysis) {
+export function buildPrompt(locale: Locale, a: Analysis, ing: Ingredients) {
   return [
     BASE_IMAGE_STYLE,
     LOCALES[locale].aesthetic,
     `Scene: ${a.scene}.`,
+    `Preferred composition: ${ing.composition} (adapt it naturally if it doesn't suit the scene).`,
+    `Little extras: ${ing.accents.join(" and ")}.`,
     CALM_AREA[a.placement],
   ].join("\n");
 }

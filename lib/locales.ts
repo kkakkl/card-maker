@@ -49,7 +49,7 @@ export const BASE_IMAGE_STYLE = [
 const ko: LocaleConfig = {
   locale: "ko",
   htmlLang: "ko",
-  title: "효도 카드 만들기",
+  title: "인사말 카드 만들기",
   subtitle: "인사말만 쓰면, 어울리는 그림을 그려서 예쁜 카드로 만들어 드려요",
   placeholder: "예) 행복한 월요일\n이번주도 매일매일\n행복하시길 바랄게요^^",
   presets: [
@@ -111,8 +111,9 @@ const ko: LocaleConfig = {
     errFailed: "그림 그리기에 실패했어요. 잠시 후 다시 눌러주세요",
     errNetwork: "인터넷 연결을 확인해 주세요",
   },
+  // 분위기만 적어요. 구체적인 소재(꽃 종류 등)는 lib/motifs.ts 에서 매번 무작위로 골라요.
   aesthetic:
-    "Korean KakaoTalk 'good morning' card aesthetic: vivid red roses, pink peonies and camellias, fields of yellow tulips, cosmos, cherry blossoms, butterflies, glossy peaches and green apples, sparkling red hearts, bright clear blue sky with sun flare, very colorful, warm and affectionate, a little bit cute.",
+    "Korean KakaoTalk 'good morning' card look: candy-bright primary colors, glossy and very saturated, warm and affectionate, a little bit cute, cheerful sparkle effects.",
 };
 
 const en: LocaleConfig = {
@@ -181,7 +182,7 @@ const en: LocaleConfig = {
     errNetwork: "Please check your internet connection",
   },
   aesthetic:
-    "American Facebook 'Good Morning, God Bless' card aesthetic: purple orchids and lilies, lavender sprigs, purple and gold butterflies, a steaming coffee cup with heart latte art, heart-shaped chocolate cookies, deep red roses, white doves in flight, a serene lake with sailboats, glitter dust, heavenly light rays, soft dreamy vignette.",
+    "American Facebook 'Good Morning, God Bless' card look: dreamy and sentimental, soft vignette, glitter and glow, often purple, pink and gold tones, inspirational and wholesome.",
 };
 
 export const LOCALES: Record<Locale, LocaleConfig> = { ko, en };

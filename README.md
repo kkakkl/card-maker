@@ -1,4 +1,4 @@
-# Greeting Card Maker (효도 카드 만들기)
+# Greeting Card Maker (인사말 카드 만들기)
 
 Type a greeting, get a nostalgic "good morning" card — the kind grandparents share on KakaoTalk, WhatsApp and Facebook every morning. An image model paints a kitschy, glittery background that matches the meaning of your text; the lettering is drawn on top in the browser. Save it as a JPG or share it straight to a messenger from your phone.
 
@@ -14,7 +14,7 @@ Two editions with different sensibilities:
 
 ## How it works
 
-1. **Analyze** — a cheap text model reads the greeting and picks the scene, where the lettering goes, and a matching text color. If that call fails, a keyword table (weekdays, seasons, health, faith, coffee, love…) takes over.
+1. **Analyze** — each card rolls random ingredients (subject ideas, lighting, composition, accents) from `lib/motifs.ts`. A cheap text model reads the greeting and builds the scene from them — unless the text names its own theme (season, holiday, faith, weather) — and picks where the lettering goes and a matching text color. "Paint a different picture" tells it to avoid the previous scene. If that call fails, a keyword table (weekdays, seasons, health, faith, coffee, love…) takes over.
 2. **Paint** — the image model draws a **text-free background** only. Image models still misspell Hangul (and sometimes English), so they never draw letters here.
 3. **Letter** — the browser composites the text, sparkles and frame on a `<canvas>` with Google Fonts. Editing the text, font, color or position re-renders instantly without paying for a new image.
 4. **Save / share** — JPG download, or the Web Share API on phones (pick KakaoTalk from the share sheet).
@@ -71,6 +71,7 @@ Use prepaid OpenAI credits with auto-recharge off and a monthly usage limit to c
 | Path | What's inside |
 |---|---|
 | `lib/locales.ts` | Everything edition-specific: copy, quick phrases, fonts, text styles, image aesthetic |
+| `lib/motifs.ts` | Pools of subjects, compositions, lighting and accents, randomly mixed per card so images don't repeat |
 | `lib/analyze.ts` | Greeting → scene/placement/style (AI + keyword fallback) |
 | `lib/generate.ts` | Prompt building and the image API call — swap providers here |
 | `lib/render.ts` | Canvas compositing: lettering styles, sparkles, glitter frame, demo background |

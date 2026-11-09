@@ -5,7 +5,7 @@ import Link from "next/link";
 import { LOCALES, type Locale, type Placement, type TextStyleId } from "@/lib/locales";
 import { ensureFont, renderCard } from "@/lib/render";
 
-type Analysis = { placement: Placement; textStyle: TextStyleId; palette: string[]; source: string };
+type Analysis = { scene: string; placement: Placement; textStyle: TextStyleId; palette: string[]; source: string };
 
 export default function CardMaker({ locale }: { locale: Locale }) {
   const cfg = LOCALES[locale];
@@ -26,7 +26,7 @@ export default function CardMaker({ locale }: { locale: Locale }) {
   const [demo, setDemo] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [variation, setVariation] = useState(0);
+  const [lastScene, setLastScene] = useState("");
   const [seed, setSeed] = useState(7);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -83,12 +83,11 @@ export default function CardMaker({ locale }: { locale: Locale }) {
     if (!text.trim()) return setError(t.empty);
     setError("");
     setLoading(true);
-    const v = redraw ? variation + 1 : 0;
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, locale, size, code, variation: v }),
+        body: JSON.stringify({ text, locale, size, code, avoid: redraw ? lastScene : "" }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -110,7 +109,7 @@ export default function CardMaker({ locale }: { locale: Locale }) {
         setStyle(a.textStyle);
       }
       setPalette(a.palette);
-      setVariation(v);
+      setLastScene(a.scene);
       setSeed(Math.floor(Math.random() * 100000) + 1);
       setCardSize(size);
       if (data.image) {
